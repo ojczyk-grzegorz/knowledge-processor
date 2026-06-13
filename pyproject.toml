@@ -7,9 +7,16 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.13.4",
     "pytubefix>=10.7.1",
-    "typer>=0.25.1",
     "youtube-transcript-api>=1.2.4",
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+    "ruff>=0.15.13",
+]
+
+
 
 [build-system]
 requires = ["hatchling"]
@@ -70,9 +77,3 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-[dependency-groups]
-dev = [
-    "ruff>=0.15.13",
-]
-
