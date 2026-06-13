@@ -7,13 +7,10 @@ import traceback
 import unicodedata
 from pathlib import Path
 
-import typer
 from pydantic import BaseModel
 from pytubefix import Playlist, YouTube
 from pytubefix.exceptions import BotDetection
 from youtube_transcript_api import YouTubeTranscriptApi
-
-app = typer.Typer()
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -32,21 +29,21 @@ class MetadataVideo(BaseModel):
     id: str
 
 
+class Settings(BaseModel):
+    extensive: bool = False
+
+
 METADATA_PLAYLIST_FILENAME = "metadata_playlist.json"
 METADATA_VIDEO_FILENAME = "metadata_video.json"
 TRANSCRIPT_FILENAME = "transcript.txt"
 
 
-@app.command()
-def main(
-    directory: Path = typer.Argument(help="directory of the playlist"),
-    extensive: bool = typer.Argument(
-        True, help="download only when no transcript exists"
-    ),
-) -> None:
-    assert os.path.isdir(directory), (
-        f"Playlist directory '{directory}' is not a directory"
-    )
+def process_dir(directory: Path, configs: Path) -> None:
+    assert os.path.isdir(directory), f"'{directory}' is not a directory"
+    assert os.path.isdir(configs), f"'{configs}' is not a directory"
+
+    with open(configs) as f:
+        settings = Settings.model_validate_json(f.read())
 
     to_process = []
     for root, dirs, files in os.walk(directory):
@@ -57,7 +54,7 @@ def main(
 
     for i, (root, dirs, _files) in enumerate(to_process):
         logger.info(f"Progress: {i + 1}/{len(to_process)}")
-        process_playlist(Path(root), dirs, extensive)
+        process_playlist(Path(root), dirs, settings.extensive)
 
 
 def process_playlist(root: Path, dirs: list[str], extensive: bool) -> None:
@@ -177,7 +174,3 @@ def write_error(directory: Path, video: YouTube | int, exc: Exception) -> None:
     with open(errors_dir / (video_title + ".txt"), "a") as f:
         f.write("------------------------------------------------------\n")
         f.write("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
-
-
-if __name__ == "__main__":
-    app()
