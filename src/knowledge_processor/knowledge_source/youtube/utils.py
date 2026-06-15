@@ -6,7 +6,7 @@ from pathlib import Path
 import yt_dlp
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from knowledge_processor.models.models import Settings, YtPlaylist, YtTypes, YtVideo
+from knowledge_processor.models.models import Settings, SourceTypes, YtPlaylist, YtVideo
 from knowledge_processor.utils.utils import get_logger
 
 logger = get_logger()
@@ -25,14 +25,14 @@ def get_playlist_data(playlist_filepath) -> YtPlaylist:
     return yt_playlist
 
 
-def extract_data_from_playlist(yt_playlist: YtPlaylist) -> YtPlaylist:
-    videos_current = {}
-    for video in [*yt_playlist.videos, *yt_playlist.videos_missing]:
-        videos_current[video.id] = video
-    videos_new = []
+def extract_data_from_playlist(yt_playlist: YtPlaylist, path: Path) -> YtPlaylist:
+    yt_playlist.file_path = path
 
     with yt_dlp.YoutubeDL(_YTDLP_OPTS) as ydl:
         info = ydl.extract_info(yt_playlist.url, download=False)
+
+    yt_playlist.id = info.get("id")
+    yt_playlist.title = info.get("title")
 
     if not info or not info.get("entries"):
         logger.warning(
@@ -40,6 +40,11 @@ def extract_data_from_playlist(yt_playlist: YtPlaylist) -> YtPlaylist:
             yt_playlist.url,
         )
         return yt_playlist
+
+    videos_current = {}
+    for video in [*yt_playlist.videos, *yt_playlist.videos_missing]:
+        videos_current[video.id] = video
+    videos_new = []
 
     entries = list(info["entries"])
     logger.info("Playlist videos count: %d", len(entries))
@@ -70,11 +75,10 @@ def get_video_data(yt_video: YtVideo | None, video_id: str, entry: dict) -> YtVi
     if not yt_video:
         yt_video = YtVideo(
             id=video_id,
-            type=YtTypes.yt_video,
+            type=SourceTypes.yt_video,
+            url=f"https://www.youtube.com/watch?v={video_id}",
         )
 
-    if not yt_video.url:
-        yt_video.url = f"https://www.youtube.com/watch?v={video_id}"
     if not yt_video.title:
         yt_video.title = entry.get("title")
     # if not yt_video.title_simplified and yt_video.title:

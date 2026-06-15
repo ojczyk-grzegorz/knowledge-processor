@@ -1,10 +1,11 @@
 from enum import StrEnum
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
 
 
-class YtTypes(StrEnum):
+class SourceTypes(StrEnum):
     yt_video = "yt_video"
     yt_playlist = "yt_playlist"
 
@@ -21,22 +22,29 @@ class SettingsYtPlaylist(BaseModel):
 
 
 class Settings(BaseModel):
+    directory: Path | None = None
+    db_path: Path | None = None
     yt_playlist: SettingsYtPlaylist = SettingsYtPlaylist()
 
 
-class YtVideo(BaseModel):
-    id: str
-    type: Literal["yt_video"]
-    url: str | None = None
+class Source(BaseModel):
+    id: str | None = None
+    type: SourceTypes
     title: str | None = None
+
+
+class YtVideo(Source):
+    type: Literal[SourceTypes.yt_video]
     title_simplified: str | None = None
+    url: str
     transcript: str | None = None
     notes: str | None = None
 
 
-class YtPlaylist(BaseModel):
-    url: str
-    type: Literal["yt_playlist"]
+class YtPlaylist(Source):
+    type: Literal[SourceTypes.yt_playlist]
     title: str | None = None
+    url: str
+    file_path: Path | None = None
     videos: list[YtVideo] = []
     videos_missing: list[YtVideo] = []

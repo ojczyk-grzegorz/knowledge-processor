@@ -20,6 +20,14 @@ def get_to_process(directory: Path) -> list[tuple[Path, list[str], list[str]]]:
     return [(Path(root), dirs, files) for root, dirs, files in os.walk(directory)]
 
 
+def get_directory(settings: Settings, directory: Path | None = None) -> Path:
+    if isinstance(directory, Path):
+        assert directory.is_dir(), f"'{directory}' is not a directory"
+        return directory
+    assert settings.directory.is_dir(), f"'{settings.directory}' is not a directory"
+    return settings.directory
+
+
 def get_settings(settings: Path | Settings) -> Settings:
     if isinstance(settings, Path):
         assert os.path.isfile(settings), f"'{settings}' is not a file"
